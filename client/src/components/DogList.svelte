@@ -1,5 +1,8 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import DogDetails from './DogDetails.svelte';
+    import DogFilters from './DogFilters.svelte';
+    import { dogFilters } from '../stores/dogStore';
 
     interface Dog {
         id: number;
@@ -7,14 +10,20 @@
         breed: string;
     }
 
-    export let dogs: Dog[] = [];
+    let dogs: Dog[] = [];
     let loading = true;
     let error: string | null = null;
 
-    const fetchDogs = async () => {
+    $: fetchDogs($dogFilters);
+
+    const fetchDogs = async (filters: any) => {
         loading = true;
+        const params = new URLSearchParams();
+        if (filters.breed) params.append('breed', filters.breed);
+        if (filters.showOnlyAvailable) params.append('available', 'true');
+
         try {
-            const response = await fetch('/api/dogs');
+            const response = await fetch(`/api/dogs?${params}`);
             if(response.ok) {
                 dogs = await response.json();
             } else {
@@ -32,8 +41,8 @@
     });
 </script>
 
-<div>
-    <h2 class="text-2xl font-medium mb-6 text-slate-100">Available Dogs</h2>
+<div class="container mx-auto p-4">
+    <DogFilters />
     
     {#if loading}
         <!-- loading animation -->
@@ -62,26 +71,9 @@
         </div>
     {:else}
         <!-- dog list -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {#each dogs as dog (dog.id)}
-                <a 
-                    href={`/dog/${dog.id}`} 
-                    class="group block bg-slate-800/60 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-slate-700/50 hover:border-blue-500/50 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 hover:translate-y-[-6px]"
-                >
-                    <div class="p-6 relative">
-                        <div class="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <div class="relative z-10">
-                            <h3 class="text-xl font-semibold text-slate-100 mb-2 group-hover:text-blue-400 transition-colors">{dog.name}</h3>
-                            <p class="text-slate-400 mb-4">{dog.breed}</p>
-                            <div class="mt-4 text-sm text-blue-400 font-medium flex items-center">
-                                <span>View details</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1 transform transition-transform duration-300 group-hover:translate-x-2" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </a>
+                <DogDetails {dog} />
             {/each}
         </div>
     {/if}
